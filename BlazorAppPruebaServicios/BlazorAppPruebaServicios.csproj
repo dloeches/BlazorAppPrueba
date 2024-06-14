@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BlazorAppPruebaBD\BlazorAppPruebaBD.csproj" />
+    <ProjectReference Include="..\BlazorAppPruebaModelos\BlazorAppPruebaModelos.csproj" />
+  </ItemGroup>
+
+</Project>

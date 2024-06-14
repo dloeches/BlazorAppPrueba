@@ -1,0 +1,162 @@
+﻿@page "/listado-tareas"
+@using BlazorAppPruebaServicios.TareaServicio
+@using BlazorAppPruebaModelos.Entities
+
+@rendermode InteractiveServer
+@inject ITareaServicio tareaService
+
+<h3>Gestión Tareas</h3>
+
+<CrearTarea OnTareaCreada="AgregarTarea" />
+
+@if (tareas != null && tareas.Any())
+{
+    <button class="btn btn-danger" @onclick="EliminarTareasSeleccionadas" disabled="@(tareasSeleccionadas.Count == 0)">Eliminar Tareas Seleccionadas</button>
+    <br />
+    <table class="table">
+        <thead>
+            <tr>
+                <th>
+                    <input type="checkbox" @onchange="seleccionarTodos" />
+                </th>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Estado</th>
+                <th>Bloqueada</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var tarea in tareas)
+            {
+                <TareaComponent TareaParameter="tarea" IsSelected="tareasSeleccionadas.Contains(tarea.Id)"
+                                                       OnDeleted="() => EliminarTarea(tarea.Id)"
+                                                       OnSelected="(IsSelected) => SeleccionarTarea(tarea, IsSelected)" />
+            }
+        </tbody>
+    </table>
+  
+    <nav>
+        <ul class="pagination">
+            <li class="page-item @(PaginaActual == 1 ? "disabled" : "")">
+                <button class="page-link" @onclick="IrAlInicio">Inicio</button>
+            </li>
+            <li class="page-item @(PaginaActual == 1 ? "disabled" : "")">
+                <button class="page-link" @onclick="IrPaginaAnterior">Anterior</button>
+            </li>
+            <li class="page-item">
+                <span class="page-link">Página @PaginaActual de @TotalPaginas</span>
+            </li>
+            <li class="page-item @(PaginaActual == TotalPaginas ? "disabled" : "")">
+                <button class="page-link" @onclick="IrPaginaSiguiente">Siguiente</button>
+            </li>
+            <li class="page-item @(PaginaActual == TotalPaginas ? "disabled" : "")">
+                <button class="page-link" @onclick="IrAlFinal">Final</button>
+            </li>
+        </ul>
+    </nav>
+}
+else
+{
+    <p>No hay tareas para mostrar.</p>
+}
+
+@code {
+    List<Tarea>? tareas;
+    int PaginaActual = 1;
+    int TotalPaginas;
+    int TareasPorPagina = 15; 
+    private List<int> tareasSeleccionadas = new List<int>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarTareas();
+    }
+
+    private async Task AgregarTarea(Tarea tarea)
+    {
+        await tareaService.CrearTareaAsync(tarea);
+        await CargarTareas();
+    }
+    
+    private async Task CargarTareas()
+    {
+        var cantidadTareas = await tareaService.ContarTareasAsync();
+        TotalPaginas = (int)Math.Ceiling(cantidadTareas / (double)TareasPorPagina);
+
+        tareas = await tareaService.GetTareasPaginadasAsync(PaginaActual, TareasPorPagina);
+        tareasSeleccionadas.Clear();
+    }
+
+    private async Task IrPaginaAnterior()
+    {
+        if (PaginaActual > 1)
+        {
+            PaginaActual--;
+            await CargarTareas();
+        }
+    }
+
+    private async Task IrPaginaSiguiente()
+    {
+        if (PaginaActual < TotalPaginas)
+        {
+            PaginaActual++;
+            await CargarTareas();
+        }
+    }
+
+    private async Task IrAlInicio()
+    {
+        PaginaActual = 1;
+        await CargarTareas();
+    }
+
+    private async Task IrAlFinal()
+    {
+        PaginaActual = TotalPaginas;
+        await CargarTareas();
+    }
+
+    private void seleccionarTodos(ChangeEventArgs e)
+    {
+        bool seleccionado = (bool)e.Value;
+        tareasSeleccionadas.Clear();
+        foreach (var tarea in tareas)
+        {
+            tareasSeleccionadas.Add(tarea.Id);
+        }
+    }
+
+    private void SeleccionarTarea(Tarea tarea, bool isSelected)
+    {
+        if (isSelected)
+        {
+            if (!tareasSeleccionadas.Contains(tarea.Id))
+            {
+                tareasSeleccionadas.Add(tarea.Id);
+            }
+        }
+        else
+        {
+            tareasSeleccionadas.Remove(tarea.Id);
+        }
+    }
+
+    private async Task EliminarTarea(int Id)
+    {
+        await tareaService.EliminarTareaAsync(Id);
+        
+        await CargarTareas();
+    }
+
+    private async Task EliminarTareasSeleccionadas()
+    {
+        foreach (var id in tareasSeleccionadas)
+        {
+            await tareaService.EliminarTareaAsync(id);
+        }
+
+        await CargarTareas();
+    }
+}

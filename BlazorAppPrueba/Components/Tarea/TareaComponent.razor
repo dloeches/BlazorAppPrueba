@@ -1,0 +1,65 @@
+﻿@using BlazorAppPruebaModelos.Entities
+
+@rendermode InteractiveServer
+
+<tr>
+    <td><input type="checkbox" checked="@IsSelected" @onchange="OnSelectionChanged" /></td>
+    <td>@TareaParameter.Id</td>
+    <td>@TareaParameter.Nombre</td>
+    <td>@TareaParameter.Estado</td>
+    <td>@(TareaParameter.Bloqueada ? "Sí" : "No")</td>
+    <td>
+        <button class="btn btn-secondary" @onclick="AvanzarEstado" disabled="@(!PuedeAvanzarEstado)">Avanzar Estado</button>
+        <button class="btn btn-danger" @onclick="EliminarTarea">Eliminar</button>
+        @if (TareaParameter.Bloqueada)
+        {
+            <button class="btn btn-warning" @onclick="() => DesbloquearTarea(TareaParameter)">Desbloquear</button>
+        }
+        else
+        {
+            <button class="btn btn-info" @onclick="() => BloquearTarea(TareaParameter)">Bloquear</button>
+        }
+    </td>
+    
+</tr>
+
+@code {
+    [Parameter]
+    public Tarea? TareaParameter { get; set; }
+    private bool PuedeAvanzarEstado => TareaParameter != null && !TareaParameter.Bloqueada && TareaParameter.Estado != EstadoTarea.Completada;
+
+    [Parameter]
+    public EventCallback<bool> OnSelected { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnDeleted { get; set; }
+
+    [Parameter]
+    public bool IsSelected { get; set; } = false;
+
+    private async Task OnSelectionChanged(ChangeEventArgs e)
+    {
+        IsSelected = (bool)e.Value;
+        await OnSelected.InvokeAsync(IsSelected);
+    }
+   
+    private async Task EliminarTarea()
+    {
+    await OnDeleted.InvokeAsync();
+    }
+
+    private void AvanzarEstado()
+    {
+        TareaParameter.AvanzarEstado();
+    }
+
+    private void BloquearTarea(Tarea tarea)
+    {
+        tarea.Bloquear();
+    }
+
+    private void DesbloquearTarea(Tarea tarea)
+    {
+        tarea.Desbloquear();
+    }
+}
